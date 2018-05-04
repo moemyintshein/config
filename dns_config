@@ -1,0 +1,67 @@
+"Installation and configuration DNS (Bind)"
+ 
+ 
+# yum install bind bind-utils -y
+# vi /etc/named.conf
+ 
+listem-on port 53 { 127.0.0.1; 192.168.0.100; };    //192.168.0.100 is dns server ip
+ 
+allow-query     { localhost; 192.168.0.0/24; };     //192.168.0.0/24 is dns network
+ 
+ 
+//zone config
+ 
+zone "ethics.edu" {
+    type master;
+    file "master/ethics.zone";
+};
+zone "100.0.168.192.in-addr.arpa" {
+    type master;
+    file "master/192.168.0.100.zone";
+};
+ 
+ 
+# cd /var/named
+# mkdir master
+# cd master
+# vi ethics.zone
+ 
+$TTL 2D
+@       IN SOA  srv.ethics.edu. root.srv.ethics.edu. (
+        2015071402 ; serial
+        3H ; refresh
+        1H ; retry
+        1W ; expiry
+        1D ) ; minium
+        IN MX 10 srv.ethics.edu.
+        IN NS srv.ethics.edu.
+        IN A 192.168.0.100
+srv     IN A 192.168.0.100
+prop3   IN CNAME    srv
+smtp    IN CNAME    srv
+www     IN CNAME    srv
+proxy   IN CNAME    srv
+mail    IN CNAME    srv
+admin   IN CNAME    srv
+repo    IN CNAME    srv
+ 
+ 
+# vi 192.168.0.100.zone
+ 
+$TTL 2D
+@       IN SOA  srv.ethics.edu. root.srv.ethics.edu. (
+        2017040312 ; serial
+        3H ; refresh
+        1H ; retry
+        1W ; expiry
+        1D ) ; minium
+        IN NS   srv.ethics.edu.
+        IN PTR  ethics.edu.
+1       IN PTR  srv.ethics.edu.
+ 
+# chgrp named /var/named/master/ethics.zone
+# chgrp named /var/named/master/192.168.0.100.zone
+# systemctl start named
+# systemctl enable named
+# firewall-cmd --add-port=53/udp --permanent
+# firewall-cmd --reload
